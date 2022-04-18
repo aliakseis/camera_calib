@@ -31,6 +31,19 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets OpenGL REQUIRED)
 # Requires OpenCV
 FIND_PACKAGE( OpenCV 4 REQUIRED )
 
+
+	if(WIN32)
+			set(DESKTOP_TARGET 
+				WIN32
+			)
+	elseif(APPLE)
+		set(DESKTOP_TARGET 
+			MACOSX_BUNDLE
+		)
+	endif(WIN32)
+
+
+
 if(ANDROID)
   add_library(calib-gui SHARED
     main.cpp
@@ -41,6 +54,7 @@ if(ANDROID)
   )
 else()
   add_executable(calib-gui
+    ${DESKTOP_TARGET}
     main.cpp
     calibgui.cpp
     camerasettings.cpp
