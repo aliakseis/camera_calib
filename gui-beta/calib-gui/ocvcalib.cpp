@@ -64,7 +64,7 @@ void getChessboardCorners(vector<Mat> images,
             ++iter) {
         vector<Point2f> pointBuf;
         bool found = findChessboardCorners(*iter, chessboardDimensions,
-          pointBuf, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_NORMALIZE_IMAGE);
+          pointBuf, cv::CALIB_CB_ADAPTIVE_THRESH | cv::CALIB_CB_NORMALIZE_IMAGE);
 
         if (found) { allFoundCorners.push_back(pointBuf); }
 //        FileStorage outStream("test_2.yml", FileStorage::WRITE);

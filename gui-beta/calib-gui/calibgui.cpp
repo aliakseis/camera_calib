@@ -269,8 +269,8 @@ void CalibGui::on_buttonPathImages_clicked()
         cv::Mat tempPic = cvImages[i].clone();
         found.push_back(findChessboardCorners(tempPic, chessboardDimensions,
                                       foundPoints,
-                                      CV_CALIB_CB_ADAPTIVE_THRESH |
-                                      CV_CALIB_CB_NORMALIZE_IMAGE));
+                                      cv::CALIB_CB_ADAPTIVE_THRESH |
+                                      cv::CALIB_CB_NORMALIZE_IMAGE));
         drawChessboardCorners(tempPic, chessboardDimensions,
                               foundPoints, found[i]);
         matChessPics.push_back(tempPic);
