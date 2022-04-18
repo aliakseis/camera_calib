@@ -11,9 +11,9 @@ CameraSettings::CameraSettings(QWidget *parent) :
     currResYEnable(false), maxResXEnable(false),
     maxResYEnable(false), focalEnable(false)
 {
-    QDoubleValidator *camElemSizeVal = new QDoubleValidator( 0.000001, 1000.0, 6, this );
+    auto *camElemSizeVal = new QDoubleValidator( 0.000001, 1000.0, 6, this );
     camElemSizeVal->setNotation(QDoubleValidator::StandardNotation);
-    QIntValidator *resVal = new QIntValidator( 1, 10000, this );
+    auto *resVal = new QIntValidator( 1, 10000, this );
 
     ui->setupUi(this);
     ui->textCamMatrixSizeX->setValidator(camElemSizeVal);

@@ -1,5 +1,7 @@
 #include <ocvcalib.h>
 
+#include <utility>
+
 /*	Sources:
     https://www.youtube.com/watch?v=v7jutAmWJVQ
     https://www.youtube.com/watch?v=GYIQiV9Aw74
@@ -47,8 +49,8 @@ void createKnownChessboardPosition(Size boardSize, float squareEdgeLength,
 {
     for (int i = 0; i < boardSize.height; i++) {
         for (int j = 0; j < boardSize.width; j++) {
-            corners.push_back(Point3f(j * squareEdgeLength,
-              i * squareEdgeLength, 0.0f));
+            corners.emplace_back(j * squareEdgeLength,
+              i * squareEdgeLength, 0.0F);
         }
     }
 }
@@ -60,10 +62,9 @@ void getChessboardCorners(vector<Mat> images,
     Size chessboardDimensions = Size(camera.chessboardWidth - 1,
                                      camera.chessboardHeight - 1);
 //                cv::imshow("test", images[images.size()-1]);
-    for (vector<Mat>::iterator iter = images.begin(); iter != images.end();
-            ++iter) {
+    for (auto & image : images) {
         vector<Point2f> pointBuf;
-        bool found = findChessboardCorners(*iter, chessboardDimensions,
+        bool found = findChessboardCorners(image, chessboardDimensions,
           pointBuf, cv::CALIB_CB_ADAPTIVE_THRESH | cv::CALIB_CB_NORMALIZE_IMAGE);
 
         if (found) { allFoundCorners.push_back(pointBuf); }
@@ -72,10 +73,10 @@ void getChessboardCorners(vector<Mat> images,
 //        outStream.release();
 
         if (showResults) {
-            drawChessboardCorners(*iter, chessboardDimensions,
+            drawChessboardCorners(image, chessboardDimensions,
                                     pointBuf, found);
 ;
-            cv::imshow("Looking for corners", *iter);
+            cv::imshow("Looking for corners", image);
             cv::waitKey(0);
         }
     }
@@ -87,8 +88,8 @@ void cameraCalibration(vector<Mat> calibrationImages, Size boardSize,
 {
     vector< vector< Point2f > > checkerboardImageSpacePoints;
     //  Searching chessboard corners in progress...
-    getChessboardCorners(calibrationImages,
-      checkerboardImageSpacePoints, camera, false);
+    getChessboardCorners(std::move(calibrationImages),
+      checkerboardImageSpacePoints, std::move(camera), false);
 
     vector< vector< Point3f > > worldSpaceCornerPoints(1);
     //  Creating known chessboard positions...
@@ -151,7 +152,8 @@ double computeReprojectionErrors( const vector<vector<Point3f> >& objectPoints,
 {
     vector<Point2f> imagePoints2;
     size_t totalPoints = 0;
-    double totalErr = 0, err;
+    double totalErr = 0;
+    double err;
     perViewErrors.resize(objectPoints.size());
     for(size_t i = 0; i < objectPoints.size(); ++i )
     {
@@ -170,8 +172,10 @@ double computeReprojectionErrors( const vector<vector<Point3f> >& objectPoints,
 string createJpgFile(int &savedImageCount) {
     std::string filename = pathToCalibPics;
     filename += "calib_pic_";
-    if (savedImageCount < 100) filename += "0";
-    if (savedImageCount < 10) filename += "0";
+    if (savedImageCount < 100) { filename += "0";
+}
+    if (savedImageCount < 10) { filename += "0";
+}
     filename += patch::to_string(savedImageCount);
     filename += ".png";
     savedImageCount++;
@@ -202,7 +206,7 @@ void setCameraParameters(CalibParams camera) {
 cv::Mat getCameraMatrix(CalibParams camera) {
     cv::Mat cameraMatrix = Mat::eye(3, 3, CV_64F);
 
-    setCameraParameters(camera);
+    setCameraParameters(std::move(camera));
 
     cameraMatrix.at<double>(0, 0)	= fx;
     cameraMatrix.at<double>(1, 0)	= 0;
@@ -218,7 +222,7 @@ cv::Mat getCameraMatrix(CalibParams camera) {
 }
 
 void saveIntrinsicCameraParameters(cv::Mat &cameraMatrix, CalibParams camera) {
-    cameraMatrix = getCameraMatrix(camera);
+    cameraMatrix = getCameraMatrix(std::move(camera));
 
     FileStorage outCamStream("camera_intrinsic.xml", FileStorage::WRITE);
     outCamStream << "header" 		<< "Raspberry Pi Camera 2.0 B";

@@ -1,4 +1,6 @@
 #include "calibgui.h"
+
+#include <utility>
 #include "ui_calibgui.h"
 //#define CALIB_PRINT_DEBUG 1
 
@@ -20,9 +22,9 @@ CalibGui::CalibGui(QWidget *parent) :
       countImages(0),   // number of picture that is shown
       totalImages(0)    // total amount of pictures selected for calibration
 {
-      QDoubleValidator *squareSizeVal = new QDoubleValidator( 0.01, 100.0, 2, this );
+      auto *squareSizeVal = new QDoubleValidator( 0.01, 100.0, 2, this );
       squareSizeVal->setNotation(QDoubleValidator::StandardNotation);
-      QIntValidator *squareAmountVal = new QIntValidator( 1, 100, this );
+      auto *squareAmountVal = new QIntValidator( 1, 100, this );
 
       ui->setupUi(this);
       ui->textImagesPath->setText("No files selected");
@@ -53,7 +55,7 @@ CalibGui::~CalibGui()
 
 /* Returns the current time with space (format: "HH:MM ") */
 QString CalibGui::getLogTime() {
-      return fileTime.currentTime().toString("HH:mm") + " ";
+      return QTime::currentTime().toString("HH:mm") + " ";
 }
 
 // Displays count'th picture if loaded,
@@ -103,7 +105,8 @@ cv::String CalibGui::toCvString(QString text) {
 // Converts QStringList to vector of cv::Strings
 vector<cv::String> CalibGui::toVector(QStringList texts) {
     vector<cv::String> cvList;
-    for (int i = 0; i < texts.size(); i++) {
+    cvList.reserve(texts.size());
+for (int i = 0; i < texts.size(); i++) {
         cvList.push_back(toCvString(texts[i]));
     }
     return cvList;
@@ -112,7 +115,8 @@ vector<cv::String> CalibGui::toVector(QStringList texts) {
 vector<cv::Mat> CalibGui::extractPicsWithChessboard(vector<cv::Mat> images) {
     vector<cv::Mat> resultImages;
     for (unsigned int i = 0; i < images.size(); i++) {
-        if (this->found[i]) resultImages.push_back(images[i]);
+        if (this->found[i]) { resultImages.push_back(images[i]);
+}
     }
     return resultImages;
 }
@@ -162,7 +166,7 @@ void CalibGui::displayCameraMatrix(int row, QString value_col1, QString value_co
 }
 
 void CalibGui::displayCameraMatrix(CalibParams camera) {
-    cv::Mat cameraMatrix = ::getCameraMatrix(camera);
+    cv::Mat cameraMatrix = ::getCameraMatrix(std::move(camera));
     ui->labelCamRow1_1->setText(QString::number(cameraMatrix.at<double>(0, 0)));
     ui->labelCamRow1_2->setText(QString::number(cameraMatrix.at<double>(0, 1)));
     ui->labelCamRow1_3->setText(QString::number(cameraMatrix.at<double>(0, 2)));
@@ -184,8 +188,9 @@ void CalibGui::displayDistanceCoefficients(cv::Mat distanceCoefficients) {
 
 void CalibGui::changeEvent(QEvent * e) {
     if(e->type() == QEvent::ActivationChange && this->isActiveWindow()) {
-        if (cameraSettings.isCalibParamsReady())
+        if (cameraSettings.isCalibParamsReady()) {
             displayCameraMatrix(cameraSettings.getCalibParams());
+}
 //        ui->textLogWindow->append(getLogTime() + "Changed activated window.");
     }
 }
@@ -241,7 +246,8 @@ void CalibGui::on_buttonPathImages_clicked()
         "Select images to calibrate the camera", QDir::currentPath(),
         "Image files (*.jpg *.jpeg *.png);; All Files (*)");
 
-    if(fileNames.size() <= 0) return;
+    if(fileNames.empty()) { return;
+}
 
     // clearing vectors
     found.clear();
@@ -295,14 +301,15 @@ void CalibGui::on_buttonPathCameraParam_clicked()
             "Select camera configuration file", QDir::currentPath(),
             "Configuration files (*.xml *.yml);; All Files (*)");
 
-      if(fileName == "") return;
+      if(fileName == "") { return;
+}
 
       try {
         ui->textCameraParamsPath->setText(fileName);
         ui->textLogWindow->append(getLogTime() + "Loaded " + fileName);
         ::loadParametersFromXml(toCvString(fileName), camera);
 
-        if(camera.header == "" || camera.focalLength == 0 ||
+        if(camera.header.empty() || camera.focalLength == 0 ||
                 camera.pixelSize.x <= 0 || camera.pixelSize.y <= 0 ||
                 camera.chessboardHeight <= 0 || camera.chessboardWidth <= 0) {
             throw std::invalid_argument("Received invalid or no arguments!");
@@ -366,20 +373,22 @@ void CalibGui::on_buttonExportCameraParam_clicked()
         "Save parameters as configuration file", QDir::currentPath(),
         "XML file (*.xml);; YML file (*.yml);; All Files (*)", &fileType);
 
-    QString text = QInputDialog::getText(0, "Input dialog",
+    QString text = QInputDialog::getText(nullptr, "Input dialog",
                                          "Please enter the name of the camera:",
                                          QLineEdit::Normal,"", &ok);
     cv::String header = toCvString(text);
 
-    if (ok)
+    if (ok) {
         ::saveParametersToXml(toCvString(saveFile), this->camera, header);
+}
 }
 
 // Starts the calibration, providing that parameters are given and pictures are loaded
 void CalibGui::on_pButStartCalibration_clicked()
 {
     Mat distanceCoefficients;
-    vector<Mat> tVectors, rVectors;
+    vector<Mat> tVectors;
+    vector<Mat> rVectors;
     vector<Mat> savedImages = extractPicsWithChessboard(cvImages);
     cameraMatrix = ::getCameraMatrix(camera);
     chessboardDimensions = cv::Size(camera.chessboardWidth - 1,
@@ -404,7 +413,7 @@ void CalibGui::on_pButStartCalibration_clicked()
     }
 
     if (savedImages.size() < (unsigned int)minAmountOfPicsToCalibrate &&
-            savedImages.size() > 0)
+            !savedImages.empty())
     {
         ui->textLogWindow->append(getLogTime() +
                                   "Not enough pictures for calibration! At least "
